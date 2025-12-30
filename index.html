@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vanishing Path - Memory Game</title>
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            /* Changed from center to allow scrolling */
+            min-height: 100vh;
+            padding: 20px 20px 40px;
+            /* More bottom padding for scroll space */
+            overflow-y: auto;
+            /* Allow scrolling if content overflows */
+            transition: background 0.3s ease;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+            z-index: 1;
+        }
+
+        h1 {
+            color: #38bdf8;
+            margin-bottom: 4px;
+            font-size: clamp(2rem, 8vh, 3.5rem);
+            /* Responsive font size */
+            font-weight: 800;
+            letter-spacing: -1px;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            /* Reduced from 40px */
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .info {
+            display: flex;
+            gap: 40px;
+            /* Reduced gap */
+            justify-content: center;
+            margin-bottom: 20px;
+            /* Reduced margin */
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            color: #64748b;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            color: #f8fafc;
+            font-weight: 700;
+            font-size: 2.2rem;
+            /* Reduced size */
+            line-height: 1;
+        }
+
+        .message {
+            height: auto;
+            /* Changed from fixed height */
+            min-height: 30px;
+            margin-bottom: 20px;
+            /* Reduced margin */
+            color: #38bdf8;
+            font-size: 1.1rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+        }
+
+        .grid-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+            /* Reduced margin */
+        }
+
+        .grid {
+            display: grid;
+            gap: 12px;
+            /* Reduced gap */
+            padding: 25px;
+            /* Reduced padding */
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .grid.size-4x4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .grid.size-5x5 {
+            grid-template-columns: repeat(5, 1fr);
+        }
+
+        .grid.size-6x6 {
+            grid-template-columns: repeat(6, 1fr);
+        }
+
+        .tile {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 55px;
+            /* Reduced from 65px */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tile:hover:not(.active):not(.wrong) {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .tile.active {
+            background: linear-gradient(135deg, #0ef, #06b6d4);
+            border-color: #0ef;
+            transform: scale(0.92);
+            box-shadow: 0 0 50px rgba(0, 238, 255, 0.6), 0 0 100px rgba(0, 238, 255, 0.3);
+            z-index: 10;
+        }
+
+        .tile.wrong {
+            background: linear-gradient(135deg, #ef4444, #991b1b);
+            border-color: #ef4444;
+            box-shadow: 0 0 40px rgba(239, 68, 68, 0.5);
+            animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
+        }
+
+        @keyframes shake {
+
+            10%,
+            90% {
+                transform: translate3d(-1px, 0, 0);
+            }
+
+            20%,
+            80% {
+                transform: translate3d(2px, 0, 0);
+            }
+
+            30%,
+            50%,
+            70% {
+                transform: translate3d(-4px, 0, 0);
+            }
+
+            40%,
+            60% {
+                transform: translate3d(4px, 0, 0);
+            }
+        }
+
+        .game-over-flash {
+            animation: redFlash 0.6s ease-out forwards;
+        }
+
+        @keyframes redFlash {
+            0% {
+                background: #0f172a;
+            }
+
+            30% {
+                background: #7f1d1d;
+            }
+
+            100% {
+                background: #0f172a;
+            }
+        }
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 16px 32px;
+            min-width: 180px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
+            padding: 50px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal h2 {
+            color: #38bdf8;
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            font-weight: 800;
+            text-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .modal p {
+            color: #cbd5e1;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .modal ul {
+            text-align: left;
+            margin-bottom: 30px;
+            color: #94a3b8;
+            list-style: none;
+        }
+
+        .modal li {
+            margin-bottom: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .modal li::before {
+            content: '→';
+            color: #38bdf8;
+            font-weight: bold;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #38bdf8;
+            border-radius: 2px;
+            pointer-events: none;
+        }
+
+        .btn-start {
+            background: #f8fafc;
+            color: #0f172a;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-start:hover:not(:disabled) {
+            background: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-start:disabled {
+            background: #475569;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .btn-share {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f8fafc;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-share:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            .info-value {
+                font-size: 2.5rem;
+            }
+
+            .grid {
+                padding: 20px;
+                gap: 10px;
+            }
+
+            .tile {
+                min-width: 55px;
+            }
+
+            .info {
+                gap: 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Vanishing Path</h1>
+        <div class="subtitle">Memory Challenge</div>
+
+        <div class="info">
+            <div class="info-item">
+                <div class="info-label">Level</div>
+                <div class="info-value" id="level">1</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">High Score</div>
+                <div class="info-value" id="highScore">0</div>
+            </div>
+        </div>
+
+        <div class="message" id="message">Watch the tiles light up!</div>
+
+        <div class="grid-container">
+            <div class="grid" id="grid"></div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-start" id="startBtn" onclick="startGame()">Start Game</button>
+            <button class="btn-share" id="shareBtn" onclick="shareScore()" style="display:none;">Share Score</button>
+        </div>
+    </div>
+
+    <!-- Tutorial Modal -->
+    <div class="modal-overlay" id="tutorialModal">
+        <div class="modal">
+            <h2>Welcome!</h2>
+            <p>Test your memory in this vanishing path challenge.</p>
+            <ul>
+                <li>Watch for the <strong>NEW</strong> neon tile each level.</li>
+                <li>Remember the <strong>FULL</strong> sequence from previous levels.</li>
+                <li>Tap the tiles in the correct order to advance.</li>
+            </ul>
+            <button class="btn-start" onclick="closeModal('tutorialModal')" style="min-width: 100%;">Let's Play</button>
+        </div>
+    </div>
+
+    <!-- High Score Modal -->
+    <div class="modal-overlay" id="highScoreModal">
+        <div class="modal" id="celebrationModalContent">
+            <h2>New Record!</h2>
+            <p>Incredible! You've set a new high score of <span id="newHighScoreVal"
+                    style="color: #0ef; font-weight: 800;"></span></p>
+            <button class="btn-start" onclick="closeModal('highScoreModal')" style="min-width: 100%;">Awesome!</button>
+        </div>
+    </div>
+
+    <!-- Funny Warning Modal -->
+    <div class="modal-overlay" id="warningModal">
+        <div class="modal">
+            <h2 style="color: #ef4444;">Hey! No Peeping! 🙈</h2>
+            <p id="funnyWarningText">The code is very shy and doesn't like being stared at. Please keep your eyes on the
+                game!</p>
+            <button class="btn-start" onclick="closeModal('warningModal')" style="min-width: 100%;">I'll Be
+                Good</button>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            sequence: [],
+            playerSequence: [],
+            gameActive: false,
+            level: 1,
+            highScore: 0,
+            isPlayingSequence: false,
+            gridSize: 4
+        };
+
+        function getGridSizeForLevel(level) {
+            if (level < 10) return 4; // Levels 1-9: 4x4
+            if (level < 20) return 5; // Levels 10-19: 5x5
+            return 6; // Levels 20+: 6x6
+        }
+
+        function initGrid() {
+            const grid = document.getElementById('grid');
+            const gridClass = `size-${gameState.gridSize}x${gameState.gridSize}`;
+
+            grid.className = `grid ${gridClass}`;
+            grid.innerHTML = '';
+
+            const totalTiles = gameState.gridSize * gameState.gridSize;
+            for (let i = 0; i < totalTiles; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.addEventListener('click', () => handleTileClick(i));
+                grid.appendChild(tile);
+            }
+        }
+
+        function getTile(index) {
+            return document.querySelectorAll('.tile')[index];
+        }
+
+        async function playSequence() {
+            gameState.isPlayingSequence = true;
+            document.getElementById('message').textContent = 'Watch for the NEW tile!';
+
+            await new Promise(r => setTimeout(r, 500));
+
+            // Only light up the last (newly added) tile
+            const lastIndex = gameState.sequence.length - 1;
+            const tileIndex = gameState.sequence[lastIndex];
+            const tile = getTile(tileIndex);
+
+            tile.classList.add('active');
+            await new Promise(r => setTimeout(r, 800)); // Slightly longer display since it's just one
+            tile.classList.remove('active');
+
+            gameState.isPlayingSequence = false;
+            document.getElementById('message').textContent = 'Your turn! (Remember the full path)';
+            gameState.playerSequence = [];
+        }
+
+        function handleTileClick(index) {
+            if (!gameState.gameActive || gameState.isPlayingSequence) {
+                return;
+            }
+
+            const tile = getTile(index);
+            tile.classList.add('active');
+
+            setTimeout(() => {
+                tile.classList.remove('active');
+            }, 200);
+
+            // Check if correct
+            if (gameState.sequence[gameState.playerSequence.length] === index) {
+                gameState.playerSequence.push(index);
+
+                // Check if player completed the sequence
+                if (gameState.playerSequence.length === gameState.sequence.length) {
+                    gameState.level++;
+                    document.getElementById('level').textContent = gameState.level;
+
+                    const newGridSize = getGridSizeForLevel(gameState.level);
+                    if (newGridSize !== gameState.gridSize) {
+                        gameState.gridSize = newGridSize;
+                        initGrid();
+                    }
+
+                    document.getElementById('message').textContent = 'Level ' + gameState.level + '!';
+
+                    setTimeout(() => {
+                        const maxTile = gameState.gridSize * gameState.gridSize;
+                        gameState.sequence.push(Math.floor(Math.random() * maxTile));
+                        playSequence();
+                    }, 1000);
+                }
+            } else {
+                // Wrong tile clicked
+                tile.classList.add('wrong');
+                gameEndGame();
+            }
+        }
+
+        function gameEndGame() {
+            gameState.gameActive = false;
+
+            // Trigger full red light effect
+            document.body.classList.add('game-over-flash');
+            setTimeout(() => {
+                document.body.classList.remove('game-over-flash');
+            }, 500);
+
+            if (gameState.level > gameState.highScore) {
+                const oldScore = gameState.highScore;
+                gameState.highScore = gameState.level;
+                if (window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.data) {
+                    window.CrazyGames.SDK.data.setItem('memoryHighScore', gameState.highScore.toString());
+                } else {
+                    localStorage.setItem('memoryHighScore', gameState.highScore);
+                }
+                document.getElementById('highScore').textContent = gameState.highScore;
+
+                // Show high score popup only if they actually played (level > 1) and surpassed old score
+                if (gameState.level > 1 && gameState.level > oldScore) {
+                    showHighScoreModal(gameState.level);
+                }
+            }
+
+            document.getElementById('message').textContent = 'Game Over! You reached Level ' + gameState.level;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('shareBtn').style.display = 'inline-block';
+        }
+
+        function showHighScoreModal(score) {
+            document.getElementById('newHighScoreVal').textContent = score;
+            const modal = document.getElementById('highScoreModal');
+            modal.classList.add('active');
+            createConfetti();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = Math.random() * 100 + 'vh';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                document.body.appendChild(confetti);
+
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+        function startGame() {
+            gameState.level = 1;
+            gameState.gridSize = getGridSizeForLevel(1);
+            gameState.sequence = [Math.floor(Math.random() * (gameState.gridSize * gameState.gridSize))];
+            gameState.playerSequence = [];
+            gameState.gameActive = true;
+            document.getElementById('level').textContent = gameState.level;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('shareBtn').style.display = 'none';
+            initGrid();
+            playSequence();
+        }
+
+        function shareScore() {
+            const text = `I reached Level ${gameState.level} on Vanishing Path! Can you beat it?`;
+            if (navigator.share) {
+                navigator.share({ title: 'Vanishing Path', text: text });
+            } else {
+                navigator.clipboard.writeText(text);
+                alert('Score copied to clipboard!');
+            }
+        }
+
+        // Anti-Cheat / Anti-Inspect Logic
+        const funnyWarnings = [
+            "The code is very shy and doesn't like being stared at. Please keep your eyes on the game!",
+            "Nice try! But the developer cast a 'Protection from Inspect' spell here. 🪄",
+            "Are you a wizard? No peeking at the magic tricks! ✨",
+            "Stop trying to look under the hood! There are only angry pixels there. 👾",
+            "Searching for secrets? The only secret is to focus better! 🧠"
+        ];
+
+        function showFunnyWarning() {
+            const randomMsg = funnyWarnings[Math.floor(Math.random() * funnyWarnings.length)];
+            document.getElementById('funnyWarningText').textContent = randomMsg;
+            document.getElementById('warningModal').classList.add('active');
+        }
+
+        // Disable right-click
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            showFunnyWarning();
+        });
+
+        // Disable keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+            if (
+                e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+                (e.ctrlKey && (e.key === 'U' || e.key === 'S'))
+            ) {
+                e.preventDefault();
+                showFunnyWarning();
+            }
+        });
+
+        // Show tutorial on load
+        window.onload = async () => {
+            // Initialize CrazyGames SDK
+            if (window.CrazyGames && window.CrazyGames.SDK) {
+                try {
+                    await window.CrazyGames.SDK.init();
+                    console.log("CrazyGames SDK Initialized");
+                    
+                    // Migrate data if needed
+                    const localHS = localStorage.getItem('memoryHighScore');
+                    const sdkHS = window.CrazyGames.SDK.data.getItem('memoryHighScore');
+                    
+                    if (localHS && (!sdkHS || parseInt(localHS) > parseInt(sdkHS))) {
+                        window.CrazyGames.SDK.data.setItem('memoryHighScore', localHS);
+                        gameState.highScore = parseInt(localHS);
+                    } else if (sdkHS) {
+                        gameState.highScore = parseInt(sdkHS);
+                    }
+                } catch (e) {
+                    console.error("CrazyGames SDK Init Failed", e);
+                    gameState.highScore = localStorage.getItem('memoryHighScore') || 0;
+                }
+            } else {
+                gameState.highScore = localStorage.getItem('memoryHighScore') || 0;
+            }
+
+            document.getElementById('highScore').textContent = gameState.highScore;
+            document.getElementById('tutorialModal').classList.add('active');
+        };
+
+        gameState.gridSize = getGridSizeForLevel(1);
+        initGrid();
+    </script>
+</body>
+
+</html>
