@@ -20,12 +20,9 @@
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            /* Changed from center to allow scrolling */
             min-height: 100vh;
             padding: 20px 20px 40px;
-            /* More bottom padding for scroll space */
             overflow-y: auto;
-            /* Allow scrolling if content overflows */
             transition: background 0.3s ease;
         }
 
@@ -40,7 +37,6 @@
             color: #38bdf8;
             margin-bottom: 4px;
             font-size: clamp(2rem, 8vh, 3.5rem);
-            /* Responsive font size */
             font-weight: 800;
             letter-spacing: -1px;
             text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
@@ -50,7 +46,6 @@
             color: #94a3b8;
             font-size: 0.9rem;
             margin-bottom: 20px;
-            /* Reduced from 40px */
             letter-spacing: 4px;
             text-transform: uppercase;
             font-weight: 500;
@@ -59,10 +54,8 @@
         .info {
             display: flex;
             gap: 40px;
-            /* Reduced gap */
             justify-content: center;
             margin-bottom: 20px;
-            /* Reduced margin */
         }
 
         .info-item {
@@ -82,16 +75,13 @@
             color: #f8fafc;
             font-weight: 700;
             font-size: 2.2rem;
-            /* Reduced size */
             line-height: 1;
         }
 
         .message {
             height: auto;
-            /* Changed from fixed height */
             min-height: 30px;
             margin-bottom: 20px;
-            /* Reduced margin */
             color: #38bdf8;
             font-size: 1.1rem;
             font-weight: 500;
@@ -103,15 +93,12 @@
             display: flex;
             justify-content: center;
             margin-bottom: 25px;
-            /* Reduced margin */
         }
 
         .grid {
             display: grid;
             gap: 12px;
-            /* Reduced gap */
             padding: 25px;
-            /* Reduced padding */
             background: rgba(30, 41, 59, 0.5);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -139,7 +126,6 @@
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             min-width: 55px;
-            /* Reduced from 65px */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -192,7 +178,7 @@
         }
 
         .game-over-flash {
-            animation: redFlash 0.6s ease-out forwards;
+            animation: redFlash 0.6s ease-in-out forwards;
         }
 
         @keyframes redFlash {
@@ -234,7 +220,6 @@
             justify-content: center;
         }
 
-        /* Modal Styles */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -348,6 +333,7 @@
             transform: translateY(-2px);
         }
 
+
         @media (max-width: 480px) {
             h1 {
                 font-size: 2.2rem;
@@ -401,7 +387,6 @@
         </div>
     </div>
 
-    <!-- Tutorial Modal -->
     <div class="modal-overlay" id="tutorialModal">
         <div class="modal">
             <h2>Welcome!</h2>
@@ -415,7 +400,6 @@
         </div>
     </div>
 
-    <!-- High Score Modal -->
     <div class="modal-overlay" id="highScoreModal">
         <div class="modal" id="celebrationModalContent">
             <h2>New Record!</h2>
@@ -425,7 +409,6 @@
         </div>
     </div>
 
-    <!-- Funny Warning Modal -->
     <div class="modal-overlay" id="warningModal">
         <div class="modal">
             <h2 style="color: #ef4444;">Hey! No Peeping! 🙈</h2>
@@ -433,6 +416,23 @@
                 game!</p>
             <button class="btn-start" onclick="closeModal('warningModal')" style="min-width: 100%;">I'll Be
                 Good</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="gameOverModal">
+        <div class="modal">
+            <h2 style="color: #ef4444;">Game Over!</h2>
+            <div style="margin: 20px 0;">
+                <div style="font-size: 0.9rem; color: #64748b; text-transform: uppercase; letter-spacing: 2px;">Final
+                    Level</div>
+                <div style="font-size: 3rem; font-weight: 800; color: #f8fafc;" id="finalLevelVal">1</div>
+            </div>
+            <div style="margin: 20px 0 30px;">
+                <div style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Best
+                    Today</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #38bdf8;" id="bestLevelVal">0</div>
+            </div>
+            <button class="btn-start" onclick="restartFromModal()" style="min-width: 100%;">Try Again</button>
         </div>
     </div>
 
@@ -448,9 +448,9 @@
         };
 
         function getGridSizeForLevel(level) {
-            if (level < 10) return 4; // Levels 1-9: 4x4
-            if (level < 20) return 5; // Levels 10-19: 5x5
-            return 6; // Levels 20+: 6x6
+            if (level < 10) return 4;
+            if (level < 20) return 5;
+            return 6;
         }
 
         function initGrid() {
@@ -479,13 +479,12 @@
 
             await new Promise(r => setTimeout(r, 500));
 
-            // Only light up the last (newly added) tile
             const lastIndex = gameState.sequence.length - 1;
             const tileIndex = gameState.sequence[lastIndex];
             const tile = getTile(tileIndex);
 
             tile.classList.add('active');
-            await new Promise(r => setTimeout(r, 800)); // Slightly longer display since it's just one
+            await new Promise(r => setTimeout(r, 800));
             tile.classList.remove('active');
 
             gameState.isPlayingSequence = false;
@@ -505,64 +504,118 @@
                 tile.classList.remove('active');
             }, 200);
 
-            // Check if correct
             if (gameState.sequence[gameState.playerSequence.length] === index) {
                 gameState.playerSequence.push(index);
 
-                // Check if player completed the sequence
                 if (gameState.playerSequence.length === gameState.sequence.length) {
                     gameState.level++;
                     document.getElementById('level').textContent = gameState.level;
 
-                    const newGridSize = getGridSizeForLevel(gameState.level);
-                    if (newGridSize !== gameState.gridSize) {
-                        gameState.gridSize = newGridSize;
-                        initGrid();
-                    }
-
-                    document.getElementById('message').textContent = 'Level ' + gameState.level + '!';
-
                     setTimeout(() => {
+                        const oldSize = gameState.gridSize;
+                        const newGridSize = getGridSizeForLevel(gameState.level);
+
+                        if (newGridSize !== oldSize) {
+                            gameState.sequence = gameState.sequence.map(index => {
+                                const row = Math.floor(index / oldSize);
+                                const col = index % oldSize;
+                                return (row * newGridSize) + col;
+                            });
+                            gameState.gridSize = newGridSize;
+                            initGrid();
+                        }
+
+                        document.getElementById('message').textContent = 'Level ' + gameState.level + '!';
+
                         const maxTile = gameState.gridSize * gameState.gridSize;
                         gameState.sequence.push(Math.floor(Math.random() * maxTile));
                         playSequence();
                     }, 1000);
                 }
             } else {
-                // Wrong tile clicked
                 tile.classList.add('wrong');
                 gameEndGame();
             }
         }
 
-        function gameEndGame() {
+        async function gameEndGame() {
             gameState.gameActive = false;
 
-            // Trigger full red light effect
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('shareBtn').style.display = 'inline-block';
+            document.getElementById('message').textContent = 'Game Over! You reached Level ' + gameState.level;
+
             document.body.classList.add('game-over-flash');
             setTimeout(() => {
                 document.body.classList.remove('game-over-flash');
-            }, 500);
+            }, 600);
 
-            if (gameState.level > gameState.highScore) {
-                const oldScore = gameState.highScore;
-                gameState.highScore = gameState.level;
-                if (window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.data) {
-                    window.CrazyGames.SDK.data.setItem('memoryHighScore', gameState.highScore.toString());
-                } else {
-                    localStorage.setItem('memoryHighScore', gameState.highScore);
+            try {
+                const oldHighScore = gameState.highScore;
+                if (gameState.level > gameState.highScore) {
+                    gameState.highScore = gameState.level;
+                    await saveHighScore(gameState.highScore);
+                    document.getElementById('highScore').textContent = gameState.highScore;
                 }
-                document.getElementById('highScore').textContent = gameState.highScore;
 
-                // Show high score popup only if they actually played (level > 1) and surpassed old score
-                if (gameState.level > 1 && gameState.level > oldScore) {
-                    showHighScoreModal(gameState.level);
-                }
+                setTimeout(() => {
+                    if (gameState.level > 1 && gameState.level > oldHighScore) {
+                        showHighScoreModal(gameState.level);
+                    } else {
+                        showGameOverModal();
+                    }
+                }, 700);
+
+            } catch (e) {
+                console.error("Error in gameEndGame logic:", e);
             }
+        }
 
-            document.getElementById('message').textContent = 'Game Over! You reached Level ' + gameState.level;
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('shareBtn').style.display = 'inline-block';
+        const GameStorage = {
+            async setItem(key, value) {
+                if (window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.data) {
+                    try {
+                        await window.CrazyGames.SDK.data.setItem(key, value);
+                        console.log(`Saved ${key} to CrazyGames:`, value);
+                    } catch (e) {
+                        console.warn("CrazyGames SDK setItem failed:", e);
+                    }
+                } else {
+                    console.warn("CrazyGames SDK data module not available for setItem");
+                }
+            },
+
+            async getItem(key) {
+                if (window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.data) {
+                    try {
+                        const sdkValue = await window.CrazyGames.SDK.data.getItem(key);
+                        return sdkValue;
+                    } catch (e) {
+                        console.warn("CrazyGames SDK getItem failed:", e);
+                    }
+                } else {
+                    console.warn("CrazyGames SDK data module not available for getItem");
+                }
+                return null;
+            }
+        };
+
+        async function saveHighScore(score) {
+            await GameStorage.setItem('memoryHighScore', score.toString());
+            console.log("High score saved:", score);
+        }
+
+        function showGameOverModal() {
+            document.getElementById('finalLevelVal').textContent = gameState.level;
+            document.getElementById('bestLevelVal').textContent = gameState.highScore;
+            const modal = document.getElementById('gameOverModal');
+            modal.classList.add('active');
+        }
+
+        function restartFromModal() {
+            closeModal('gameOverModal');
+            startGame();
         }
 
         function showHighScoreModal(score) {
@@ -597,7 +650,7 @@
             gameState.playerSequence = [];
             gameState.gameActive = true;
             document.getElementById('level').textContent = gameState.level;
-            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').style.display = 'none';
             document.getElementById('shareBtn').style.display = 'none';
             initGrid();
             playSequence();
@@ -613,7 +666,6 @@
             }
         }
 
-        // Anti-Cheat / Anti-Inspect Logic
         const funnyWarnings = [
             "The code is very shy and doesn't like being stared at. Please keep your eyes on the game!",
             "Nice try! But the developer cast a 'Protection from Inspect' spell here. 🪄",
@@ -628,15 +680,12 @@
             document.getElementById('warningModal').classList.add('active');
         }
 
-        // Disable right-click
         document.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             showFunnyWarning();
         });
 
-        // Disable keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
             if (
                 e.key === 'F12' ||
                 (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
@@ -647,34 +696,25 @@
             }
         });
 
-        // Show tutorial on load
         window.onload = async () => {
-            // Initialize CrazyGames SDK
+            document.getElementById('tutorialModal').classList.add('active');
+
             if (window.CrazyGames && window.CrazyGames.SDK) {
                 try {
                     await window.CrazyGames.SDK.init();
                     console.log("CrazyGames SDK Initialized");
-                    
-                    // Migrate data if needed
-                    const localHS = localStorage.getItem('memoryHighScore');
-                    const sdkHS = window.CrazyGames.SDK.data.getItem('memoryHighScore');
-                    
-                    if (localHS && (!sdkHS || parseInt(localHS) > parseInt(sdkHS))) {
-                        window.CrazyGames.SDK.data.setItem('memoryHighScore', localHS);
-                        gameState.highScore = parseInt(localHS);
-                    } else if (sdkHS) {
-                        gameState.highScore = parseInt(sdkHS);
+
+                    const highScore = await GameStorage.getItem('memoryHighScore');
+                    if (highScore !== null) {
+                        gameState.highScore = parseInt(highScore) || 0;
+                        document.getElementById('highScore').textContent = gameState.highScore;
                     }
                 } catch (e) {
-                    console.error("CrazyGames SDK Init Failed", e);
-                    gameState.highScore = localStorage.getItem('memoryHighScore') || 0;
+                    console.error("CrazyGames SDK failed to initialize or load data:", e);
                 }
             } else {
-                gameState.highScore = localStorage.getItem('memoryHighScore') || 0;
+                console.warn("CrazyGames SDK not found");
             }
-
-            document.getElementById('highScore').textContent = gameState.highScore;
-            document.getElementById('tutorialModal').classList.add('active');
         };
 
         gameState.gridSize = getGridSizeForLevel(1);
